@@ -156,6 +156,68 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
+    # Restore the sidebar with framework selector and example questions
+    with st.sidebar:
+        st.markdown('<div class="sidebar-header">💡 Example Questions</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="sample-data">
+        <strong>📄 Sample Data:</strong> 
+        <a href="https://github.com/nuggetswise/conveyer/blob/main/sample_security_policy.pdf" target="_blank">Download sample security policy</a>
+        <br><small>Contains SOC 2, ISO27001, and security compliance sections for testing</small>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Security Framework Selection
+        st.markdown('<div class="sidebar-header">🏛️ Security Frameworks</div>', unsafe_allow_html=True)
+        frameworks = get_all_frameworks()
+        framework_names = [f"{info['name']} ({key})" for key, info in frameworks.items()]
+        
+        selected_framework_display = st.selectbox(
+            "Choose a compliance framework:",
+            ["Custom Questions"] + framework_names,
+            key="framework_selector"
+        )
+        
+        if selected_framework_display != "Custom Questions":
+            # Extract framework key from display name
+            framework_key = selected_framework_display.split("(")[-1].rstrip(")")
+            st.session_state.selected_framework = framework_key
+            
+            # Show framework info
+            framework_info = get_framework_info(framework_key)
+            if framework_info:
+                st.info(f"**{framework_info['name']}**: {framework_info['description']}")
+                
+                # Show framework questions
+                framework_questions = get_framework_questions(framework_key)
+                st.markdown("**Common Questions:**")
+                for i, question in enumerate(framework_questions[:5], 1):  # Show first 5
+                    if st.button(f"{i}. {question}", key=f"fw_{framework_key}_{i}"):
+                        st.session_state.question_input = question
+                        st.session_state.example_question = question
+                        st.session_state.use_sample_pdf = True
+                        st.rerun()
+                
+                if len(framework_questions) > 5:
+                    st.caption(f"... and {len(framework_questions) - 5} more questions")
+        else:
+            st.session_state.selected_framework = None
+        
+        # General example questions
+        st.markdown('<div class="sidebar-header">🔍 General Questions</div>', unsafe_allow_html=True)
+        example_questions = [
+            "Do you encrypt data at rest?",
+            "How do you handle access controls?",
+            "What are your backup procedures?",
+            "Do you have a disaster recovery plan?"
+        ]
+        for question in example_questions:
+            if st.button(question, key=f"example_{question}"):
+                st.session_state.question_input = question
+                st.session_state.example_question = question
+                st.session_state.use_sample_pdf = True
+                st.rerun()
+    
     # Primary workflow section (upload, ask, get answer)
     col1, col2 = st.columns([1, 1])
     with col1:
