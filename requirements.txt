@@ -5,10 +5,5 @@ groq==0.4.2
 cohere==4.47
 python-dotenv==1.0.1
 PyMuPDF==1.23.26
-langchain==0.1.0
-langchain-google-genai==0.0.6
-langchain-openai==0.0.5
-langchain-groq==0.0.1
-langchain-cohere==0.0.1
 tiktoken==0.5.1
 reportlab==4.0.4 
