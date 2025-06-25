@@ -227,27 +227,69 @@ class RAGEngine:
         # If all models fail, return context
         return f"Based on the document: {context[:300]}..."
     
-    def get_coverage_confidence(self, question: str) -> float:
-        """Estimate confidence in answer coverage (0-100%)"""
+    def get_coverage_confidence(self, question: str) -> Tuple[float, str]:
+        """Estimate confidence in answer coverage with detailed reasoning"""
         if not self.chunks:
-            return 0.0
+            return 0.0, "No document chunks available"
         
-        # Simple heuristic: longer chunks and more keyword matches = higher confidence
+        # Find best chunk
         best_chunk = self._find_best_chunk(question)
         if not best_chunk:
-            return 0.0
+            return 0.0, "No relevant information found in document"
         
-        # Calculate confidence based on chunk length and keyword density
+        # Analyze the chunk and question
         chunk_text = best_chunk['text'].lower()
-        question_keywords = question.lower().split()
+        question_lower = question.lower()
         
-        keyword_matches = sum(1 for keyword in question_keywords if keyword in chunk_text)
-        keyword_density = keyword_matches / len(question_keywords) if question_keywords else 0
+        # Extract meaningful keywords (remove common words)
+        common_words = {'do', 'you', 'what', 'how', 'when', 'where', 'why', 'is', 'are', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
+        question_keywords = [word for word in question_lower.split() if word not in common_words and len(word) > 2]
         
-        # Base confidence on keyword density and chunk length
-        confidence = min(100, (keyword_density * 60) + (len(chunk_text) / 1000 * 40))
+        if not question_keywords:
+            question_keywords = question_lower.split()
         
-        return round(confidence, 1)
+        # Calculate keyword matches
+        keyword_matches = []
+        for keyword in question_keywords:
+            if keyword in chunk_text:
+                keyword_matches.append(keyword)
+        
+        keyword_density = len(keyword_matches) / len(question_keywords) if question_keywords else 0
+        
+        # Calculate context richness
+        chunk_length = len(chunk_text)
+        context_richness = min(1.0, chunk_length / 1000)  # Normalize to 0-1
+        
+        # Calculate final confidence
+        keyword_score = keyword_density * 60  # 60% weight
+        context_score = context_richness * 40  # 40% weight
+        confidence = min(100, keyword_score + context_score)
+        
+        # Generate detailed reasoning
+        reasoning_parts = []
+        
+        if keyword_matches:
+            reasoning_parts.append(f"✅ Found {len(keyword_matches)}/{len(question_keywords)} relevant keywords: {', '.join(keyword_matches)}")
+        else:
+            reasoning_parts.append(f"⚠️ No exact keyword matches found")
+        
+        if context_richness > 0.7:
+            reasoning_parts.append("✅ Rich context with detailed information")
+        elif context_richness > 0.3:
+            reasoning_parts.append("⚠️ Moderate context - answer may be limited")
+        else:
+            reasoning_parts.append("⚠️ Limited context - answer may be incomplete")
+        
+        if keyword_density > 0.7:
+            reasoning_parts.append("✅ High keyword relevance")
+        elif keyword_density > 0.3:
+            reasoning_parts.append("⚠️ Moderate keyword relevance")
+        else:
+            reasoning_parts.append("⚠️ Low keyword relevance")
+        
+        reasoning = " | ".join(reasoning_parts)
+        
+        return round(confidence, 1), reasoning
 
 # Global RAG engine instance
 _rag_engine = None
@@ -260,10 +302,10 @@ def load_and_query(pdf_file, question: str) -> Tuple[str, str]:
     
     return _rag_engine.load_and_query(pdf_file, question)
 
-def get_coverage_confidence(question: str) -> float:
-    """Get confidence score for a question"""
+def get_coverage_confidence(question: str) -> Tuple[float, str]:
+    """Get confidence score and reasoning for a question"""
     global _rag_engine
     if _rag_engine is None:
-        return 0.0
+        return 0.0, "RAG engine not initialized"
     
     return _rag_engine.get_coverage_confidence(question) 

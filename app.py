@@ -46,11 +46,20 @@ st.markdown("""
     }
     .confidence-box {
         background-color: #fff3cd;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        display: inline-block;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #ffeaa7;
+        margin-top: 1rem;
         font-size: 0.9rem;
-        color: #856404;
+    }
+    .confidence-score {
+        background-color: #28a745;
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 15px;
+        display: inline-block;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
     }
     .upload-section {
         background-color: #f8f9fa;
@@ -88,6 +97,14 @@ st.markdown("""
         margin-bottom: 1rem;
         font-size: 0.9rem;
     }
+    .search-explanation {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 3px solid #17a2b8;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -115,6 +132,23 @@ def main():
         </ul>
         
         <p><em>Designed for teams who want to <strong>answer faster, trust sooner</strong>, and automate the repetitive parts of security review.</em></p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Search logic explanation
+    with st.expander("🔍 How does the search work?", expanded=False):
+        st.markdown("""
+        <div class="search-explanation">
+        <h4>🧠 AI-Powered Semantic Search</h4>
+        <p><strong>Step 1:</strong> Document is split into 500-word chunks with page tracking</p>
+        <p><strong>Step 2:</strong> AI analyzes your question and finds the most relevant chunk using:</p>
+        <ul>
+        <li><strong>Semantic understanding:</strong> "encrypt data at rest" matches "AES-256 secures stored information"</li>
+        <li><strong>Compliance terminology:</strong> Understands security and compliance language</li>
+        <li><strong>Context relevance:</strong> Prioritizes chunks with detailed, relevant information</li>
+        </ul>
+        <p><strong>Step 3:</strong> AI generates precise answer from the selected chunk</p>
+        <p><strong>Step 4:</strong> Confidence score evaluates answer quality and completeness</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -199,7 +233,7 @@ def main():
             with st.spinner("🔍 Searching your policy..."):
                 try:
                     answer, source = load_and_query(uploaded_file, question)
-                    confidence = get_coverage_confidence(question)
+                    confidence, reasoning = get_coverage_confidence(question)
                     
                     # Display results
                     st.markdown('<div class="answer-box">', unsafe_allow_html=True)
@@ -213,9 +247,22 @@ def main():
                     st.write(source)
                     st.markdown('</div>', unsafe_allow_html=True)
                     
-                    # Confidence score
+                    # Confidence score with detailed reasoning
                     if confidence > 0:
-                        st.markdown(f'<div class="confidence-box">🎯 Confidence: {confidence}%</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="confidence-box">', unsafe_allow_html=True)
+                        st.markdown(f'<div class="confidence-score">🎯 Confidence: {confidence}%</div>', unsafe_allow_html=True)
+                        st.markdown("**Evaluation:**")
+                        st.write(reasoning)
+                        st.markdown("""
+                        <small>
+                        <strong>What this means:</strong><br>
+                        • <strong>90%+:</strong> Excellent match with detailed, relevant information<br>
+                        • <strong>70-89%:</strong> Good match with sufficient context<br>
+                        • <strong>50-69%:</strong> Moderate match - answer may be limited<br>
+                        • <strong>Below 50%:</strong> Weak match - consider rephrasing question
+                        </small>
+                        """, unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
                     
                 except Exception as e:
                     st.error(f"❌ Error processing question: {str(e)}")
