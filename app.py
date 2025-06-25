@@ -60,6 +60,14 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
     }
+    .model-status {
+        background-color: #d4edda;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: 1px solid #c3e6cb;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -72,18 +80,33 @@ def main():
     with st.sidebar:
         st.header("⚙️ Configuration")
         
-        # API Key input
-        api_key = st.text_input(
-            "Google API Key (Optional)",
-            type="password",
-            help="Enter your Google Gemini API key for better semantic search. Leave empty to use keyword search only."
-        )
+        # Show API key status
+        api_keys = {
+            'GEMINI_API_KEY': os.getenv('GEMINI_API_KEY'),
+            'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY'),
+            'GROQ_API_KEY': os.getenv('GROQ_API_KEY'),
+            'COHERE_API_KEY': os.getenv('COHERE_API_KEY')
+        }
         
-        if api_key:
-            os.environ['GOOGLE_API_KEY'] = api_key
-            st.success("✅ API key configured")
+        available_keys = [key for key, value in api_keys.items() if value]
+        
+        if available_keys:
+            st.markdown('<div class="model-status">', unsafe_allow_html=True)
+            st.markdown("**🤖 Available AI Models:**")
+            for key in available_keys:
+                st.markdown(f"• {key.replace('_API_KEY', '')}")
+            st.markdown('</div>', unsafe_allow_html=True)
         else:
-            st.info("ℹ️ Using keyword search (limited functionality)")
+            st.info("ℹ️ No API keys found in .env file. Using keyword search only.")
+            st.markdown("""
+            **To enable AI-powered search, add API keys to your .env file:**
+            ```
+            GEMINI_API_KEY=your_key_here
+            OPENAI_API_KEY=your_key_here
+            GROQ_API_KEY=your_key_here
+            COHERE_API_KEY=your_key_here
+            ```
+            """)
         
         st.divider()
         

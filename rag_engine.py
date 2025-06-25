@@ -3,19 +3,67 @@ import google.generativeai as genai
 from typing import Tuple, List, Dict
 from utils.pdf_loader import PDFLoader
 import streamlit as st
+import openai
+import cohere
+import groq
 
 class RAGEngine:
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.getenv('GOOGLE_API_KEY')
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
-        else:
-            self.model = None
+    def __init__(self):
+        # Load API keys from environment
+        self.gemini_api_key = os.getenv('GEMINI_API_KEY')
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        self.cohere_api_key = os.getenv('COHERE_API_KEY')
+        self.groq_api_key = os.getenv('GROQ_API_KEY')
+        
+        # Initialize models with fallback logic
+        self.models = self._initialize_models()
         
         self.pdf_loader = PDFLoader()
         self.chunks = []
         self.embeddings = []
+    
+    def _initialize_models(self) -> Dict[str, any]:
+        """Initialize available models with fallback priority"""
+        models = {}
+        
+        # Try Gemini first
+        if self.gemini_api_key:
+            try:
+                genai.configure(api_key=self.gemini_api_key)
+                models['gemini'] = genai.GenerativeModel('gemini-pro')
+                st.success("✅ Using Google Gemini for enhanced search")
+            except Exception as e:
+                st.warning(f"⚠️ Gemini initialization failed: {e}")
+        
+        # Try OpenAI as fallback
+        if self.openai_api_key and 'gemini' not in models:
+            try:
+                openai.api_key = self.openai_api_key
+                models['openai'] = 'gpt-3.5-turbo'
+                st.success("✅ Using OpenAI GPT-3.5 for enhanced search")
+            except Exception as e:
+                st.warning(f"⚠️ OpenAI initialization failed: {e}")
+        
+        # Try Groq as fallback
+        if self.groq_api_key and 'gemini' not in models and 'openai' not in models:
+            try:
+                models['groq'] = groq.Groq(api_key=self.groq_api_key)
+                st.success("✅ Using Groq for enhanced search")
+            except Exception as e:
+                st.warning(f"⚠️ Groq initialization failed: {e}")
+        
+        # Try Cohere as fallback
+        if self.cohere_api_key and len(models) == 0:
+            try:
+                models['cohere'] = cohere.Client(self.cohere_api_key)
+                st.success("✅ Using Cohere for enhanced search")
+            except Exception as e:
+                st.warning(f"⚠️ Cohere initialization failed: {e}")
+        
+        if not models:
+            st.info("ℹ️ No API keys available. Using keyword search only.")
+        
+        return models
     
     def load_and_query(self, pdf_file, question: str) -> Tuple[str, str]:
         """
@@ -32,7 +80,7 @@ class RAGEngine:
         if not best_chunk:
             return "I couldn't find relevant information in the document.", "No source found"
         
-        # Generate answer using LLM
+        # Generate answer using available LLM
         answer = self._generate_answer(question, best_chunk['text'])
         source = self.pdf_loader.get_chunk_source(best_chunk)
         
@@ -43,7 +91,7 @@ class RAGEngine:
         if not self.chunks:
             return None
         
-        if self.model:
+        if self.models:
             # Use LLM for semantic similarity
             return self._semantic_search(question)
         else:
@@ -51,7 +99,7 @@ class RAGEngine:
             return self._keyword_search(question)
     
     def _semantic_search(self, question: str) -> Dict[str, any]:
-        """Use LLM to find most relevant chunk"""
+        """Use available LLM to find most relevant chunk"""
         try:
             # Create a prompt to find the most relevant chunk
             chunks_text = "\n\n".join([
@@ -69,14 +117,41 @@ class RAGEngine:
             Respond with only the chunk number.
             """
             
-            response = self.model.generate_content(prompt)
-            chunk_num = int(response.text.strip()) - 1
-            
-            if 0 <= chunk_num < len(self.chunks):
-                return self.chunks[chunk_num]
+            # Try each model in order
+            for model_name, model in self.models.items():
+                try:
+                    if model_name == 'gemini':
+                        response = model.generate_content(prompt)
+                        chunk_num = int(response.text.strip()) - 1
+                    elif model_name == 'openai':
+                        response = openai.ChatCompletion.create(
+                            model=model,
+                            messages=[{"role": "user", "content": prompt}]
+                        )
+                        chunk_num = int(response.choices[0].message.content.strip()) - 1
+                    elif model_name == 'groq':
+                        response = model.chat.completions.create(
+                            model="llama3-8b-8192",
+                            messages=[{"role": "user", "content": prompt}]
+                        )
+                        chunk_num = int(response.choices[0].message.content.strip()) - 1
+                    elif model_name == 'cohere':
+                        response = model.generate(
+                            model='command',
+                            prompt=prompt,
+                            max_tokens=10
+                        )
+                        chunk_num = int(response.generations[0].text.strip()) - 1
+                    
+                    if 0 <= chunk_num < len(self.chunks):
+                        return self.chunks[chunk_num]
+                        
+                except Exception as e:
+                    st.warning(f"⚠️ {model_name} search failed: {e}")
+                    continue
             
         except Exception as e:
-            st.warning(f"Semantic search failed: {e}. Falling back to keyword search.")
+            st.warning(f"⚠️ Semantic search failed: {e}")
         
         return self._keyword_search(question)
     
@@ -99,8 +174,8 @@ class RAGEngine:
         return best_chunk
     
     def _generate_answer(self, question: str, context: str) -> str:
-        """Generate answer using LLM with context"""
-        if not self.model:
+        """Generate answer using available LLM with context"""
+        if not self.models:
             # Fallback: return context with some formatting
             return f"Based on the document: {context[:300]}..."
         
@@ -116,11 +191,41 @@ class RAGEngine:
             say "The document doesn't contain enough information to answer this question."
             """
             
-            response = self.model.generate_content(prompt)
-            return response.text.strip()
+            # Try each model in order
+            for model_name, model in self.models.items():
+                try:
+                    if model_name == 'gemini':
+                        response = model.generate_content(prompt)
+                        return response.text.strip()
+                    elif model_name == 'openai':
+                        response = openai.ChatCompletion.create(
+                            model=model,
+                            messages=[{"role": "user", "content": prompt}]
+                        )
+                        return response.choices[0].message.content.strip()
+                    elif model_name == 'groq':
+                        response = model.chat.completions.create(
+                            model="llama3-8b-8192",
+                            messages=[{"role": "user", "content": prompt}]
+                        )
+                        return response.choices[0].message.content.strip()
+                    elif model_name == 'cohere':
+                        response = model.generate(
+                            model='command',
+                            prompt=prompt,
+                            max_tokens=200
+                        )
+                        return response.generations[0].text.strip()
+                        
+                except Exception as e:
+                    st.warning(f"⚠️ {model_name} answer generation failed: {e}")
+                    continue
             
         except Exception as e:
             return f"Error generating answer: {e}. Here's the relevant context: {context[:200]}..."
+        
+        # If all models fail, return context
+        return f"Based on the document: {context[:300]}..."
     
     def get_coverage_confidence(self, question: str) -> float:
         """Estimate confidence in answer coverage (0-100%)"""
