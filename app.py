@@ -3,7 +3,6 @@ from rag_engine import load_and_query, get_coverage_confidence
 import os
 from dotenv import load_dotenv
 from security_frameworks import get_all_frameworks, get_framework_questions, get_framework_info
-from export_utils import create_export_button
 from datetime import datetime
 
 # Load environment variables
@@ -167,7 +166,6 @@ def main():
         <li><strong>Signal-oriented:</strong> Surfaces only what's needed for trust evaluation — no hallucinations</li>
         <li><strong>Minimal & embeddable:</strong> Easy to imagine inside Conveyor's UI or as a Chrome extension</li>
         <li><strong>Framework-aware:</strong> Built-in templates for SOC 2, ISO 27001, GDPR, HIPAA</li>
-        <li><strong>Export-ready:</strong> Multiple export formats for seamless workflow integration</li>
         </ul>
         
         <p><em>Designed for teams who want to <strong>answer faster, trust sooner</strong>, and automate the repetitive parts of security review.</em></p>
@@ -336,7 +334,7 @@ def main():
                     answer, source = load_and_query(active_pdf, question)
                     confidence, reasoning = get_coverage_confidence(question)
                     
-                    # Store answer for export
+                    # Store answer for reference
                     answer_data = {
                         'question': question,
                         'answer': answer,
@@ -379,11 +377,6 @@ def main():
         
         elif question and not active_pdf:
             st.warning("⚠️ No PDF available. Please upload a PDF or ensure the sample PDF is present.")
-    
-    # Export functionality
-    if st.session_state.answers:
-        st.divider()
-        create_export_button(st.session_state.answers)
     
     # Footer
     st.divider()

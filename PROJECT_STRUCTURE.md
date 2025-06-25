@@ -10,8 +10,7 @@ conveyer/
 │   └── requirements.txt          # 📦 Python dependencies
 │
 ├── 🏗️ Feature Modules
-│   ├── security_frameworks.py    # 🏛️ Framework templates (SOC 2, ISO 27001, GDPR, HIPAA)
-│   └── export_utils.py           # 📤 Multi-format export functionality
+│   └── security_frameworks.py    # 🏛️ Framework templates (SOC 2, ISO 27001, GDPR, HIPAA)
 │
 ├── 📁 Utilities
 │   └── utils/
@@ -51,7 +50,6 @@ conveyer/
 
 ### ✅ **Market Research-Driven Features**
 - **Framework Templates**: SOC 2, ISO 27001, GDPR, HIPAA support
-- **Multi-Format Export**: JSON, CSV, Excel, Markdown
 - **Answer History**: Session persistence with metadata
 - **Professional UI**: Clean, responsive Streamlit interface
 
@@ -63,7 +61,7 @@ conveyer/
 
 ## 📊 **Code Quality Metrics**
 
-- **Total Lines**: ~1,500 lines of clean, documented code
+- **Total Lines**: ~1,300 lines of clean, documented code
 - **Test Coverage**: RAG engine testing included
 - **Documentation**: 4 comprehensive documentation files
 - **Error Handling**: Graceful fallbacks for all edge cases
