@@ -60,58 +60,77 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
     }
-    .model-status {
-        background-color: #d4edda;
-        padding: 0.5rem 1rem;
+    .value-prop {
+        background-color: #f8f9fa;
+        padding: 1rem;
         border-radius: 8px;
-        border: 1px solid #c3e6cb;
+        border-left: 3px solid #28a745;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+    }
+    .value-prop h4 {
+        color: #28a745;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+    }
+    .value-prop ul {
+        margin: 0.5rem 0;
+        padding-left: 1.2rem;
+    }
+    .value-prop li {
+        margin: 0.2rem 0;
+    }
+    .sample-data {
+        background-color: #e8f4fd;
+        padding: 0.8rem;
+        border-radius: 8px;
+        border: 1px solid #b3d9ff;
         margin-bottom: 1rem;
         font-size: 0.9rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
+def load_sample_pdf():
+    """Load the sample PDF file"""
+    if os.path.exists("sample_security_policy.pdf"):
+        with open("sample_security_policy.pdf", "rb") as f:
+            return f.read()
+    return None
+
 def main():
     # Header
     st.markdown('<h1 class="main-header">🔐 Security Intake Assistant</h1>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Upload your security policy and ask questions to get instant answers with source citations</p>', unsafe_allow_html=True)
     
-    # Sidebar for configuration
+    # Value proposition for hiring managers (subtle)
+    with st.expander("💡 What makes this unique?", expanded=False):
+        st.markdown("""
+        <div class="value-prop">
+        <h4>🔐 Purpose-built for security workflows</h4>
+        <ul>
+        <li><strong>Compliance-focused:</strong> Prioritizes SOC 2, ISO27001 terminology and coverage confidence</li>
+        <li><strong>Signal-oriented:</strong> Surfaces only what's needed for trust evaluation — no hallucinations</li>
+        <li><strong>Minimal & embeddable:</strong> Easy to imagine inside Conveyor's UI or as a Chrome extension</li>
+        </ul>
+        
+        <p><em>Designed for teams who want to <strong>answer faster, trust sooner</strong>, and automate the repetitive parts of security review.</em></p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Sidebar for example questions
     with st.sidebar:
-        st.header("⚙️ Configuration")
-        
-        # Show API key status
-        api_keys = {
-            'GEMINI_API_KEY': os.getenv('GEMINI_API_KEY'),
-            'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY'),
-            'GROQ_API_KEY': os.getenv('GROQ_API_KEY'),
-            'COHERE_API_KEY': os.getenv('COHERE_API_KEY')
-        }
-        
-        available_keys = [key for key, value in api_keys.items() if value]
-        
-        if available_keys:
-            st.markdown('<div class="model-status">', unsafe_allow_html=True)
-            st.markdown("**🤖 Available AI Models:**")
-            for key in available_keys:
-                st.markdown(f"• {key.replace('_API_KEY', '')}")
-            st.markdown('</div>', unsafe_allow_html=True)
-        else:
-            st.info("ℹ️ No API keys found in .env file. Using keyword search only.")
-            st.markdown("""
-            **To enable AI-powered search, add API keys to your .env file:**
-            ```
-            GEMINI_API_KEY=your_key_here
-            OPENAI_API_KEY=your_key_here
-            GROQ_API_KEY=your_key_here
-            COHERE_API_KEY=your_key_here
-            ```
-            """)
-        
-        st.divider()
-        
-        # Example questions
         st.header("💡 Example Questions")
+        
+        # Sample data download section
+        st.markdown("""
+        <div class="sample-data">
+        <strong>📄 Sample Data:</strong> 
+        <a href="https://github.com/nuggetswise/conveyer/blob/main/sample_security_policy.pdf" target="_blank">Download sample security policy</a>
+        <br><small>Contains SOC 2, ISO27001, and security compliance sections for testing</small>
+        </div>
+        """, unsafe_allow_html=True)
+        
         example_questions = [
             "Do you encrypt data at rest?",
             "What is your incident response process?",
@@ -123,6 +142,7 @@ def main():
         for question in example_questions:
             if st.button(question, key=f"example_{question}"):
                 st.session_state.example_question = question
+                st.session_state.use_sample_pdf = True
     
     # Main content area
     col1, col2 = st.columns([1, 1])
@@ -139,6 +159,18 @@ def main():
                 help="Upload your security policy, SOC2 report, ISO27001 document, etc."
             )
             st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Handle sample PDF loading
+        if hasattr(st.session_state, 'use_sample_pdf') and st.session_state.use_sample_pdf:
+            sample_pdf_data = load_sample_pdf()
+            if sample_pdf_data:
+                # Create a file-like object for the sample PDF
+                import io
+                sample_file = io.BytesIO(sample_pdf_data)
+                sample_file.name = "sample_security_policy.pdf"
+                uploaded_file = sample_file
+                st.success("✅ Loaded sample security policy for testing")
+                del st.session_state.use_sample_pdf
         
         if uploaded_file:
             st.success(f"✅ Uploaded: {uploaded_file.name}")
