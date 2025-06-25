@@ -30,7 +30,7 @@ class RAGEngine:
         if self.gemini_api_key:
             try:
                 genai.configure(api_key=self.gemini_api_key)
-                models['gemini'] = genai.GenerativeModel('gemini-pro')
+                models['gemini'] = genai.GenerativeModel('gemini-2.0-flash')
                 st.success("✅ Using Google Gemini for enhanced search")
             except Exception as e:
                 st.warning(f"⚠️ Gemini initialization failed: {e}")
