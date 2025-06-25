@@ -8,4 +8,5 @@ tiktoken==0.5.1
 reportlab==4.0.4
 openai==0.28.1
 cohere==4.37
-groq==0.4.2 
+groq==0.4.2
+pandas==2.0.3 
