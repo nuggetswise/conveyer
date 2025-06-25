@@ -156,144 +156,10 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Value proposition for hiring managers (subtle)
-    with st.expander("💡 What makes this unique?", expanded=False):
-        st.markdown("""
-        <div class="value-prop">
-        <h4>🔐 Purpose-built for security workflows</h4>
-        <ul>
-        <li><strong>Compliance-focused:</strong> Prioritizes SOC 2, ISO27001 terminology and coverage confidence</li>
-        <li><strong>Signal-oriented:</strong> Surfaces only what's needed for trust evaluation — no hallucinations</li>
-        <li><strong>Minimal & embeddable:</strong> Easy to imagine inside Conveyor's UI or as a Chrome extension</li>
-        <li><strong>Framework-aware:</strong> Built-in templates for SOC 2, ISO 27001, GDPR, HIPAA</li>
-        </ul>
-        
-        <p><em>Designed for teams who want to <strong>answer faster, trust sooner</strong>, and automate the repetitive parts of security review.</em></p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Search logic explanation
-    with st.expander("🔍 How does the search work?", expanded=False):
-        st.markdown("""
-        <div class="search-explanation">
-        <h4>🧠 AI-Powered Semantic Search</h4>
-        <p><strong>Step 1:</strong> Document is split into 500-word chunks with page tracking</p>
-        <p><strong>Step 2:</strong> AI analyzes your question and finds the most relevant chunk using:</p>
-        <ul>
-        <li><strong>Semantic understanding:</strong> "encrypt data at rest" matches "AES-256 secures stored information"</li>
-        <li><strong>Compliance terminology:</strong> Understands security and compliance language</li>
-        <li><strong>Context relevance:</strong> Prioritizes chunks with detailed, relevant information</li>
-        </ul>
-        <p><strong>Step 3:</strong> AI generates precise answer from the selected chunk</p>
-        <p><strong>Step 4:</strong> Confidence score evaluates answer quality and completeness</p>
-        <p><strong>🎯 Goal:</strong> Maintain high accuracy through source validation and iterative improvement</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # How accuracy is measured and improved
-    with st.expander("📊 How is accuracy measured and improved?", expanded=False):
-        st.markdown("""
-        <div class="search-explanation">
-        <h4>🎯 Accuracy Measurement Methodology</h4>
-        
-        <h5>📈 How We Measure Accuracy:</h5>
-        <ul>
-        <li><strong>Human Evaluation:</strong> Security experts review answers against source documents</li>
-        <li><strong>Factual Correctness:</strong> Verify answers match the actual policy content</li>
-        <li><strong>Completeness:</strong> Check if answers cover the full scope of the question</li>
-        <li><strong>Source Attribution:</strong> Ensure citations are accurate and relevant</li>
-        </ul>
-        
-        <h5>🔧 How We Improve Accuracy:</h5>
-        <ul>
-        <li><strong>Confidence Scoring:</strong> Low confidence triggers human review</li>
-        <li><strong>User Feedback:</strong> Collect corrections and improve training data</li>
-        <li><strong>Model Fine-tuning:</strong> Retrain on security-specific documents</li>
-        <li><strong>Prompt Engineering:</strong> Optimize instructions for accuracy over creativity</li>
-        <li><strong>Source Validation:</strong> Cross-reference multiple chunks when needed</li>
-        </ul>
-        
-        <h5>⚠️ Important Notes:</h5>
-        <ul>
-        <li><strong>No Guaranteed Accuracy:</strong> AI systems can make mistakes - always verify critical information</li>
-        <li><strong>Domain Specific:</strong> Performance varies by document type and question complexity</li>
-        <li><strong>Continuous Improvement:</strong> Accuracy improves with more training data and user feedback</li>
-        <li><strong>Human Oversight:</strong> Critical decisions should always involve human review</li>
-        </ul>
-        
-        <p><em>This MVP demonstrates the approach - production systems would require extensive testing, validation, and ongoing monitoring.</em></p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Sidebar for example questions and framework selection
-    with st.sidebar:
-        st.markdown('<div class="sidebar-header">💡 Example Questions</div>', unsafe_allow_html=True)
-        st.markdown("""
-        <div class="sample-data">
-        <strong>📄 Sample Data:</strong> 
-        <a href="https://github.com/nuggetswise/conveyer/blob/main/sample_security_policy.pdf" target="_blank">Download sample security policy</a>
-        <br><small>Contains SOC 2, ISO27001, and security compliance sections for testing</small>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Security Framework Selection
-        st.markdown('<div class="sidebar-header">🏛️ Security Frameworks</div>', unsafe_allow_html=True)
-        frameworks = get_all_frameworks()
-        framework_names = [f"{info['name']} ({key})" for key, info in frameworks.items()]
-        
-        selected_framework_display = st.selectbox(
-            "Choose a compliance framework:",
-            ["Custom Questions"] + framework_names,
-            key="framework_selector"
-        )
-        
-        if selected_framework_display != "Custom Questions":
-            # Extract framework key from display name
-            framework_key = selected_framework_display.split("(")[-1].rstrip(")")
-            st.session_state.selected_framework = framework_key
-            
-            # Show framework info
-            framework_info = get_framework_info(framework_key)
-            if framework_info:
-                st.info(f"**{framework_info['name']}**: {framework_info['description']}")
-                
-                # Show framework questions
-                framework_questions = get_framework_questions(framework_key)
-                st.markdown("**Common Questions:**")
-                for i, question in enumerate(framework_questions[:5], 1):  # Show first 5
-                    if st.button(f"{i}. {question}", key=f"fw_{framework_key}_{i}"):
-                        st.session_state.question_input = question
-                        st.session_state.example_question = question
-                        st.session_state.use_sample_pdf = True
-                        st.rerun()
-                
-                if len(framework_questions) > 5:
-                    st.caption(f"... and {len(framework_questions) - 5} more questions")
-        else:
-            st.session_state.selected_framework = None
-        
-        # General example questions
-        st.markdown('<div class="sidebar-header">🔍 General Questions</div>', unsafe_allow_html=True)
-        example_questions = [
-            "Do you encrypt data at rest?",
-            "How do you handle access controls?",
-            "What are your backup procedures?",
-            "Do you have a disaster recovery plan?"
-        ]
-        for question in example_questions:
-            if st.button(question, key=f"example_{question}"):
-                st.session_state.question_input = question
-                st.session_state.example_question = question
-                st.session_state.use_sample_pdf = True
-                st.rerun()
-    
-    # Main content area
+    # Primary workflow section (upload, ask, get answer)
     col1, col2 = st.columns([1, 1])
-    
     with col1:
         st.header("📄 Upload Security Policy")
-        
-        # File upload section
         with st.container():
             st.markdown('<div class="upload-section">', unsafe_allow_html=True)
             uploaded_file = st.file_uploader(
@@ -302,39 +168,26 @@ def main():
                 help="Upload your security policy, SOC2 report, ISO27001 document, etc."
             )
             st.markdown('</div>', unsafe_allow_html=True)
-        
-        # No need to handle sample PDF loading here
         if uploaded_file:
             st.success(f"✅ Uploaded: {uploaded_file.name}")
-            
-            # File info
             file_size = len(uploaded_file.getvalue()) / 1024  # KB
             st.info(f"📊 File size: {file_size:.1f} KB")
-    
     with col2:
         st.header("❓ Ask Questions")
-        
-        # Question input
         question = st.text_input(
             "Enter your question:",
             placeholder="e.g., Do you encrypt data at rest?",
             key="question_input"
         )
-        
-        # Handle example question clicks
         if hasattr(st.session_state, 'example_question'):
             question = st.session_state.example_question
             del st.session_state.example_question
-        
         active_pdf, is_sample = get_active_pdf(uploaded_file)
         if question and active_pdf:
-            # Process question
             with st.spinner("🔍 Searching your policy..."):
                 try:
                     answer, source = load_and_query(active_pdf, question)
                     confidence, reasoning = get_coverage_confidence(question)
-                    
-                    # Store answer for reference
                     answer_data = {
                         'question': question,
                         'answer': answer,
@@ -345,7 +198,6 @@ def main():
                         'timestamp': datetime.now().isoformat()
                     }
                     st.session_state.answers.append(answer_data)
-                    
                     if answer and answer.strip():
                         st.markdown('<div class="answer-box">', unsafe_allow_html=True)
                         st.markdown("**Answer:**")
@@ -374,10 +226,70 @@ def main():
                 except Exception as e:
                     st.error(f"❌ Error processing question: {str(e)}")
                     st.info("💡 Try re-uploading the PDF or check if the file is corrupted.")
-        
         elif question and not active_pdf:
             st.warning("⚠️ No PDF available. Please upload a PDF or ensure the sample PDF is present.")
-    
+
+    # Move the expandable info panels to the bottom
+    st.divider()
+    with st.expander("💡 What makes this unique?", expanded=False):
+        st.markdown("""
+        <div class="value-prop">
+        <h4>🔐 Purpose-built for security workflows</h4>
+        <ul>
+        <li><strong>Compliance-focused:</strong> Prioritizes SOC 2, ISO27001 terminology and coverage confidence</li>
+        <li><strong>Signal-oriented:</strong> Surfaces only what's needed for trust evaluation — no hallucinations</li>
+        <li><strong>Minimal & embeddable:</strong> Easy to imagine inside Conveyor's UI or as a Chrome extension</li>
+        <li><strong>Framework-aware:</strong> Built-in templates for SOC 2, ISO 27001, GDPR, HIPAA</li>
+        </ul>
+        <p><em>Designed for teams who want to <strong>answer faster, trust sooner</strong>, and automate the repetitive parts of security review.</em></p>
+        </div>
+        """, unsafe_allow_html=True)
+    with st.expander("🔍 How does the search work?", expanded=False):
+        st.markdown("""
+        <div class="search-explanation">
+        <h4>🧠 AI-Powered Semantic Search</h4>
+        <p><strong>Step 1:</strong> Document is split into 500-word chunks with page tracking</p>
+        <p><strong>Step 2:</strong> AI analyzes your question and finds the most relevant chunk using:</p>
+        <ul>
+        <li><strong>Semantic understanding:</strong> "encrypt data at rest" matches "AES-256 secures stored information"</li>
+        <li><strong>Compliance terminology:</strong> Understands security and compliance language</li>
+        <li><strong>Context relevance:</strong> Prioritizes chunks with detailed, relevant information</li>
+        </ul>
+        <p><strong>Step 3:</strong> AI generates precise answer from the selected chunk</p>
+        <p><strong>Step 4:</strong> Confidence score evaluates answer quality and completeness</p>
+        <p><strong>🎯 Goal:</strong> Maintain high accuracy through source validation and iterative improvement</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with st.expander("📊 How is accuracy measured and improved?", expanded=False):
+        st.markdown("""
+        <div class="search-explanation">
+        <h4>🎯 Accuracy Measurement Methodology</h4>
+        <h5>📈 How We Measure Accuracy:</h5>
+        <ul>
+        <li><strong>Human Evaluation:</strong> Security experts review answers against source documents</li>
+        <li><strong>Factual Correctness:</strong> Verify answers match the actual policy content</li>
+        <li><strong>Completeness:</strong> Check if answers cover the full scope of the question</li>
+        <li><strong>Source Attribution:</strong> Ensure citations are accurate and relevant</li>
+        </ul>
+        <h5>🔧 How We Improve Accuracy:</h5>
+        <ul>
+        <li><strong>Confidence Scoring:</strong> Low confidence triggers human review</li>
+        <li><strong>User Feedback:</strong> Collect corrections and improve training data</li>
+        <li><strong>Model Fine-tuning:</strong> Retrain on security-specific documents</li>
+        <li><strong>Prompt Engineering:</strong> Optimize instructions for accuracy over creativity</li>
+        <li><strong>Source Validation:</strong> Cross-reference multiple chunks when needed</li>
+        </ul>
+        <h5>⚠️ Important Notes:</h5>
+        <ul>
+        <li><strong>No Guaranteed Accuracy:</strong> AI systems can make mistakes - always verify critical information</li>
+        <li><strong>Domain Specific:</strong> Performance varies by document type and question complexity</li>
+        <li><strong>Continuous Improvement:</strong> Accuracy improves with more training data and user feedback</li>
+        <li><strong>Human Oversight:</strong> Critical decisions should always involve human review</li>
+        </ul>
+        <p><em>This MVP demonstrates the approach - production systems would require extensive testing, validation, and ongoing monitoring.</em></p>
+        </div>
+        """, unsafe_allow_html=True)
+
     # Footer
     st.divider()
     st.markdown("""
